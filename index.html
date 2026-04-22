@@ -123,25 +123,42 @@
       pointer-events: none;
     }
 
-    /* ═══ FAMILY TITLE ═══ */
-    .family-title {
-      position: absolute; top: 16%; left: 50%; transform: translateX(-50%);
-      font-family: 'Uncial Antiqua', 'MedievalSharp', serif;
-      font-size: clamp(10px, 2.8vmin, 22px);
-      color: #4a3318;
-      text-shadow: 0 1px 0 rgba(255,230,180,0.3);
-      letter-spacing: 4px;
-      z-index: 5; pointer-events: none;
-      text-align: center;
+    /* ═══ FAMILY TITLE — curved arc at the bottom ═══ */
+    .family-title-arc {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 92%; height: 92%;
+      pointer-events: none;
+      z-index: 5;
     }
-    .family-subtitle {
-      position: absolute; top: 22.5%; left: 50%; transform: translateX(-50%);
-      font-family: 'Crimson Text', serif;
-      font-size: clamp(7px, 1.3vmin, 11px);
-      font-style: italic;
-      color: #8a7045;
-      z-index: 5; pointer-events: none;
-      letter-spacing: 2px;
+
+    /* ═══ ROMAN NUMERAL INNER RING ═══ */
+    .roman-numeral {
+      position: absolute; top: 50%; left: 50%;
+      font-family: 'Uncial Antiqua', serif;
+      font-size: clamp(8px, 1.4vmin, 11px);
+      color: rgba(90,60,30,0.35);
+      pointer-events: none;
+      letter-spacing: 0.5px;
+      margin-left: -10px; margin-top: -7px;
+      width: 20px; text-align: center;
+    }
+
+    /* ═══ BRASS MEDALLIONS at cardinal points ═══ */
+    .medallion {
+      position: absolute;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #e6c060, #a87a28, #6b4e18);
+      box-shadow:
+        0 1px 3px rgba(0,0,0,0.4),
+        inset 0 1px 2px rgba(255,230,150,0.35),
+        inset 0 -1px 2px rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: #2a1810;
+      pointer-events: none;
+      z-index: 6;
     }
 
     /* ═══ ZONE LABELS ═══ */
@@ -304,6 +321,24 @@
       font-size: 11px; color: rgba(160,130,80,0.25);
       z-index: 30; font-style: italic;
     }
+
+    /* ═══ SCREENSAVER MODE ═══ */
+    body.screensaver { cursor: none; }
+    body.screensaver .status-bar { display: none; }
+    body.screensaver .clock-container {
+      width: min(95vmin, 1200px);
+      height: min(95vmin, 1200px);
+    }
+    /* Subtle slow ambient light drift in screensaver mode */
+    body.screensaver .glow {
+      animation: screensaverDrift 20s ease-in-out infinite;
+    }
+    @keyframes screensaverDrift {
+      0%, 100% { opacity: 0.4; transform: translate(0, 0); }
+      25% { opacity: 0.8; transform: translate(-2%, 1%); }
+      50% { opacity: 0.5; transform: translate(2%, -1%); }
+      75% { opacity: 0.9; transform: translate(-1%, 2%); }
+    }
   </style>
 </head>
 <body>
@@ -323,9 +358,21 @@
       <div class="outer-ring"></div>
       <div class="inner-ring"></div>
 
-      <!-- Title -->
-      <div class="family-title">THE STONES</div>
-      <div class="family-subtitle">whereabouts of the family</div>
+      <!-- Title — curved along the top arc -->
+      <svg class="family-title-arc" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <!-- Upper arc for title (sits above the clock center) -->
+          <path id="titleArc" d="M 10,50 A 40,40 0 0 1 90,50" fill="none"/>
+          <!-- Lower arc for subtitle -->
+          <path id="subtitleArc" d="M 14,50 A 36,36 0 0 0 86,50" fill="none"/>
+        </defs>
+        <text style="font-family: 'Uncial Antiqua', serif; font-size: 6.5px; fill: #4a3318; letter-spacing: 2.5px;">
+          <textPath href="#titleArc" startOffset="50%" text-anchor="middle">✦ THE STONES ✦</textPath>
+        </text>
+        <text style="font-family: 'Crimson Text', serif; font-size: 3.2px; fill: #7a5a30; letter-spacing: 1.8px; font-style: italic;">
+          <textPath href="#subtitleArc" startOffset="50%" text-anchor="middle">whereabouts of the family</textPath>
+        </text>
+      </svg>
 
       <!-- Hands (built by JS) -->
       <div class="hand hand-daddy" id="hand-daddy">
@@ -458,6 +505,37 @@
         tick.style.transform = `rotate(${angle}deg) translateY(-${isMajor ? 44 : 45}%)`;
         face.appendChild(tick);
       }
+
+      // Roman numeral inner ring — I through XII, antique clock feel
+      const ROMAN = ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'];
+      const romanR = size * 0.22;
+      for (let h = 0; h < 12; h++) {
+        const numAngle = (h / 12) * 360;
+        const rad = (numAngle * Math.PI) / 180;
+        const rx = Math.cos(rad - Math.PI/2) * romanR;
+        const ry = Math.sin(rad - Math.PI/2) * romanR;
+        const num = document.createElement('div');
+        num.className = 'roman-numeral';
+        num.textContent = ROMAN[h];
+        num.style.transform = `translate(${rx}px, ${ry}px)`;
+        face.appendChild(num);
+      }
+
+      // Brass medallions at N/E/S/W cardinal positions
+      const medR = size * 0.47;
+      ['✦','✦','✦','✦'].forEach((sym, i) => {
+        const angle = i * 90;
+        const rad = (angle * Math.PI) / 180;
+        const mx = Math.cos(rad - Math.PI/2) * medR;
+        const my = Math.sin(rad - Math.PI/2) * medR;
+        const med = document.createElement('div');
+        med.className = 'medallion';
+        med.textContent = sym;
+        med.style.left = '50%';
+        med.style.top = '50%';
+        med.style.transform = `translate(calc(${mx}px - 50%), calc(${my}px - 50%))`;
+        face.appendChild(med);
+      });
     }
 
     renderZones();
@@ -518,6 +596,12 @@
     //     HA_URL is auto-detected as same-origin (no CORS issues)
     //   Hosted externally (GitHub Pages): ?ha=http://100.x.x.x:8123&token=eyJ...
     const urlParams = new URLSearchParams(window.location.search);
+
+    // Screensaver mode — hides chrome, bigger clock, slower ambient animation.
+    // Usage: add ?screensaver=1 to URL.
+    if (urlParams.get('screensaver') === '1' || urlParams.get('screensaver') === 'true') {
+      document.body.classList.add('screensaver');
+    }
 
     // Auto-detect: if we're served from an HA URL (port 8123), use same-origin for API calls.
     // This OVERRIDES localStorage so stale cached URLs can't cause CORS issues.
