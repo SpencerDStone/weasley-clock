@@ -509,8 +509,24 @@
     // ═══════════════════════════════════════════
     // HOME ASSISTANT
     // ═══════════════════════════════════════════
-    const HA_URL = '';
-    const HA_TOKEN = '';
+    // Read HA credentials from URL query params so we don't commit them to git.
+    // Usage: https://spencerdstone.github.io/weasley-clock/?ha=http://192.168.10.10:8123&token=eyJ...
+    // Tokens can also come from localStorage (stored on first use) or postMessage from parent frame.
+    const urlParams = new URLSearchParams(window.location.search);
+    let HA_URL = urlParams.get('ha') || localStorage.getItem('weasley_ha_url') || '';
+    let HA_TOKEN = urlParams.get('token') || localStorage.getItem('weasley_ha_token') || '';
+
+    // Persist to localStorage so the tablet just works after first load
+    if (urlParams.get('ha')) localStorage.setItem('weasley_ha_url', HA_URL);
+    if (urlParams.get('token')) localStorage.setItem('weasley_ha_token', HA_TOKEN);
+
+    // Allow parent frame (HA dashboard) to inject credentials via postMessage
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'weasley_config') {
+        if (e.data.ha_url) { HA_URL = e.data.ha_url; localStorage.setItem('weasley_ha_url', HA_URL); }
+        if (e.data.ha_token) { HA_TOKEN = e.data.ha_token; localStorage.setItem('weasley_ha_token', HA_TOKEN); }
+      }
+    });
 
     async function pollHA() {
       if (!HA_URL || !HA_TOKEN) return;
@@ -551,15 +567,39 @@
     // ═══════════════════════════════════════════
     // INIT
     // ═══════════════════════════════════════════
+    let demoInterval = null;
+    let pollInterval = null;
+    let currentMode = null;  // 'live' or 'demo'
+
+    function switchToLive() {
+      if (currentMode === 'live') return;
+      currentMode = 'live';
+      if (demoInterval) { clearInterval(demoInterval); demoInterval = null; }
+      if (pollInterval) clearInterval(pollInterval);
+      document.getElementById('status-bar').textContent = 'the stone family clock — live';
+      pollHA();
+      pollInterval = setInterval(pollHA, 10000);
+    }
+
+    function switchToDemo() {
+      if (currentMode === 'demo') return;
+      currentMode = 'demo';
+      if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+      if (demoInterval) clearInterval(demoInterval);
+      document.getElementById('status-bar').textContent = 'the stone family clock — demo';
+      demoInterval = setInterval(runDemo, 7000);
+    }
+
     document.fonts.ready.then(() => {
       setAllHands({ daddy: 'Home', mommy: 'Home', shepherd: 'Home', elliot: 'Home', becket: 'Home' });
 
-      if (HA_URL && HA_TOKEN) {
-        pollHA();
-        setInterval(pollHA, 10000);
-      } else {
-        setTimeout(() => { runDemo(); setInterval(runDemo, 7000); }, 2500);
+      // Check for credentials periodically — they might arrive via postMessage later
+      function tick() {
+        if (HA_URL && HA_TOKEN) switchToLive();
+        else if (!currentMode) switchToDemo();
       }
+      setTimeout(tick, 1500);
+      setInterval(tick, 3000);  // re-check in case postMessage credentials arrive late
     });
   </script>
 
