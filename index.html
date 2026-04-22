@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>The Stone Family Clock</title>
+  <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Uncial+Antiqua&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0a07;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; overflow: hidden;
+      font-family: 'Crimson Text', Georgia, serif;
+    }
+
+    /* ── Dark room ambiance ── */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(160,120,60,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(30,22,12,0.4) 0%, rgba(8,6,3,0.95) 100%);
+    }
+
+    /* Candle flicker glow */
+    .glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(circle at 50% 48%, rgba(255,200,100,0.03) 0%, transparent 40%);
+      animation: flicker 4s ease-in-out infinite;
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 0.5; }
+      25% { opacity: 0.8; }
+      50% { opacity: 0.4; }
+      75% { opacity: 0.9; }
+    }
+
+    .clock-container {
+      position: relative; z-index: 1;
+      width: min(88vmin, 680px); height: min(88vmin, 680px);
+    }
+
+    /* ═══ ORNATE FRAME ═══ */
+    .clock-frame {
+      position: absolute; inset: -30px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #8b7040, #5a4525, #3d2e18, #2a1f10);
+      box-shadow:
+        0 0 0 4px #2a1f10,
+        0 0 0 6px #6b5530,
+        0 0 0 8px #3d2e18,
+        inset 0 0 30px rgba(0,0,0,0.6),
+        0 0 80px rgba(0,0,0,0.8),
+        0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    /* Carved scrollwork decoration */
+    .clock-frame::before {
+      content: ''; position: absolute; inset: 8px; border-radius: 50%;
+      border: 2px solid rgba(180,150,90,0.15);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+    }
+    .clock-frame::after {
+      content: ''; position: absolute; inset: 14px; border-radius: 50%;
+      border: 1px solid rgba(200,170,100,0.08);
+    }
+
+    /* Glass bezel */
+    .clock-glass {
+      position: absolute; inset: 0; border-radius: 50%;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 40%, rgba(255,255,255,0.015) 100%);
+      box-shadow:
+        inset 0 0 0 3px rgba(100,80,50,0.4),
+        inset 0 0 0 5px rgba(60,45,25,0.6),
+        inset 0 2px 4px rgba(255,220,150,0.05);
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    /* ═══ CLOCK FACE ═══ */
+    .clock-face {
+      position: absolute; inset: 0; border-radius: 50%; overflow: hidden;
+      background:
+        radial-gradient(circle at 42% 38%, #f2e4c4 0%, #e6d4a4 25%, #d8c48a 50%, #c8b070 75%, #b09858 100%);
+    }
+
+    /* Deep aging — stains, foxing marks, wear */
+    .clock-face::before {
+      content: ''; position: absolute; inset: 0; border-radius: 50%;
+      background:
+        /* water stain */
+        radial-gradient(ellipse at 65% 25%, rgba(140,100,50,0.12) 0%, transparent 25%),
+        /* foxing spots */
+        radial-gradient(circle at 30% 65%, rgba(120,80,30,0.08) 0%, transparent 8%),
+        radial-gradient(circle at 72% 58%, rgba(130,90,40,0.06) 0%, transparent 6%),
+        radial-gradient(circle at 45% 82%, rgba(110,75,35,0.07) 0%, transparent 7%),
+        radial-gradient(circle at 20% 35%, rgba(140,100,50,0.05) 0%, transparent 5%),
+        radial-gradient(circle at 85% 40%, rgba(120,85,40,0.06) 0%, transparent 6%),
+        /* overall aging darken at edges */
+        radial-gradient(circle at 50% 50%, transparent 55%, rgba(100,70,30,0.15) 100%);
+      pointer-events: none;
+    }
+
+    /* Crackle/patina effect */
+    .clock-face::after {
+      content: ''; position: absolute; inset: 0; border-radius: 50%;
+      background:
+        repeating-linear-gradient(45deg, transparent, transparent 80px, rgba(100,70,30,0.02) 80px, rgba(100,70,30,0.02) 81px),
+        repeating-linear-gradient(-30deg, transparent, transparent 120px, rgba(80,55,25,0.015) 120px, rgba(80,55,25,0.015) 121px);
+      pointer-events: none;
+    }
+
+    /* ═══ DECORATIVE RING ═══ */
+    .inner-ring {
+      position: absolute; inset: 8%; border-radius: 50%;
+      border: 1.5px solid rgba(120,85,40,0.2);
+      pointer-events: none;
+    }
+    .outer-ring {
+      position: absolute; inset: 4%; border-radius: 50%;
+      border: 1px solid rgba(120,85,40,0.12);
+      pointer-events: none;
+    }
+
+    /* ═══ FAMILY TITLE ═══ */
+    .family-title {
+      position: absolute; top: 16%; left: 50%; transform: translateX(-50%);
+      font-family: 'Uncial Antiqua', 'MedievalSharp', serif;
+      font-size: clamp(10px, 2.8vmin, 22px);
+      color: #4a3318;
+      text-shadow: 0 1px 0 rgba(255,230,180,0.3);
+      letter-spacing: 4px;
+      z-index: 5; pointer-events: none;
+      text-align: center;
+    }
+    .family-subtitle {
+      position: absolute; top: 22.5%; left: 50%; transform: translateX(-50%);
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(7px, 1.3vmin, 11px);
+      font-style: italic;
+      color: #8a7045;
+      z-index: 5; pointer-events: none;
+      letter-spacing: 2px;
+    }
+
+    /* ═══ ZONE LABELS ═══ */
+    .zone-label {
+      position: absolute; top: 50%; left: 50%;
+      font-family: 'MedievalSharp', 'Crimson Text', serif;
+      font-size: clamp(9px, 2vmin, 15px);
+      color: #3e2a15;
+      text-shadow: 0 1px 0 rgba(255,235,190,0.25);
+      transform-origin: 0 0;
+      pointer-events: none;
+      text-align: center;
+      width: 90px; margin-left: -45px;
+      line-height: 1.2;
+    }
+
+    .zone-icon {
+      position: absolute; top: 50%; left: 50%;
+      font-size: clamp(16px, 3.5vmin, 28px);
+      transform-origin: 0 0;
+      pointer-events: none;
+      opacity: 0.35;
+      filter: grayscale(40%) sepia(30%);
+    }
+
+    /* Zone divider — ornate dots instead of lines */
+    .zone-divider {
+      position: absolute; top: 50%; left: 50%;
+      width: 0; height: 36%;
+      border-left: 1px dotted rgba(120,85,40,0.12);
+      transform-origin: bottom center;
+      pointer-events: none;
+    }
+
+    /* ═══ ORNATE TICK MARKS ═══ */
+    .tick {
+      position: absolute; top: 50%; left: 50%;
+      transform-origin: bottom center;
+      pointer-events: none;
+    }
+    .tick-major {
+      width: 3px; height: 14px;
+      background: linear-gradient(to top, rgba(90,65,30,0.3), rgba(90,65,30,0.1));
+      border-radius: 1px;
+    }
+    .tick-minor {
+      width: 1px; height: 6px;
+      background: rgba(90,65,30,0.12);
+    }
+
+    /* ═══ CENTER HUB ═══ */
+    .center-hub {
+      position: absolute; top: 50%; left: 50%;
+      width: 40px; height: 40px; border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle at 38% 32%, #d4a850, #a07830, #6b5020, #4a3515);
+      box-shadow:
+        0 2px 8px rgba(0,0,0,0.5),
+        inset 0 1px 3px rgba(255,220,140,0.3),
+        inset 0 -2px 4px rgba(0,0,0,0.3);
+      z-index: 20;
+    }
+    .center-hub::after {
+      content: ''; position: absolute; inset: 6px; border-radius: 50%;
+      border: 1px solid rgba(255,220,140,0.15);
+    }
+
+    /* ═══ CLOCK HANDS — ornate antique style ═══ */
+    .hand {
+      position: absolute; top: 50%; left: 50%;
+      transform-origin: 50% 88%;
+      transition: transform 2.2s cubic-bezier(0.25, 1.5, 0.5, 1);
+      z-index: 10;
+      filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.4));
+    }
+
+    .hand-body {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* Arrow tip — more ornate spear shape */
+    .hand-tip {
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+    }
+
+    /* Decorative diamond below tip */
+    .hand-diamond {
+      width: 10px; height: 10px;
+      transform: rotate(45deg);
+      margin-top: -3px;
+    }
+
+    /* Main shaft */
+    .hand-shaft {
+      width: 5px;
+      border-radius: 1px;
+      margin-top: -3px;
+    }
+
+    /* Name plate — like engraved brass */
+    .hand-nameplate {
+      position: absolute;
+      font-family: 'MedievalSharp', serif;
+      font-size: clamp(6px, 1.2vmin, 9px);
+      font-weight: 400;
+      white-space: nowrap;
+      letter-spacing: 1.5px;
+      padding: 1px 5px;
+      border-radius: 3px;
+      left: 50%; transform: translateX(-50%);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    }
+
+    /* Counterweight tail */
+    .hand-tail {
+      width: 6px;
+      border-radius: 2px;
+      margin-top: -1px;
+    }
+
+    /* ── Hand colors — aged metal tones ── */
+    .hand-daddy .hand-tip { border-bottom: 16px solid #7a2a1a; }
+    .hand-daddy .hand-diamond { background: #7a2a1a; }
+    .hand-daddy .hand-shaft { height: var(--shaft-1); background: linear-gradient(#8a3020, #6a2010); }
+    .hand-daddy .hand-tail { height: 18px; background: #7a2a1a; }
+    .hand-daddy .hand-nameplate { color: #e8d0b0; background: rgba(122,42,26,0.85); top: 35%; }
+
+    .hand-mommy .hand-tip { border-bottom: 15px solid #2a5545; }
+    .hand-mommy .hand-diamond { background: #2a5545; }
+    .hand-mommy .hand-shaft { height: var(--shaft-2); background: linear-gradient(#2a5545, #1a3530); }
+    .hand-mommy .hand-tail { height: 16px; background: #2a5545; }
+    .hand-mommy .hand-nameplate { color: #d0e8d8; background: rgba(42,85,69,0.85); top: 33%; }
+
+    .hand-shepherd .hand-tip { border-bottom: 14px solid #3a3570; }
+    .hand-shepherd .hand-diamond { background: #3a3570; }
+    .hand-shepherd .hand-shaft { height: var(--shaft-3); background: linear-gradient(#3a3570, #252055); }
+    .hand-shepherd .hand-tail { height: 14px; background: #3a3570; }
+    .hand-shepherd .hand-nameplate { color: #d0cce8; background: rgba(58,53,112,0.85); top: 31%; }
+
+    .hand-elliot .hand-tip { border-bottom: 13px solid #8a6a10; }
+    .hand-elliot .hand-diamond { background: #8a6a10; }
+    .hand-elliot .hand-shaft { height: var(--shaft-4); background: linear-gradient(#8a6a10, #6a5008); }
+    .hand-elliot .hand-tail { height: 12px; background: #8a6a10; }
+    .hand-elliot .hand-nameplate { color: #f0e0b0; background: rgba(138,106,16,0.85); top: 29%; }
+
+    .hand-becket .hand-tip { border-bottom: 12px solid #854828; }
+    .hand-becket .hand-diamond { background: #854828; }
+    .hand-becket .hand-shaft { height: var(--shaft-5); background: linear-gradient(#854828, #60351c); }
+    .hand-becket .hand-tail { height: 10px; background: #854828; }
+    .hand-becket .hand-nameplate { color: #e8d4c0; background: rgba(133,72,40,0.85); top: 27%; }
+
+    /* ═══ STATUS ═══ */
+    .status-bar {
+      position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+      font-family: 'Crimson Text', serif;
+      font-size: 11px; color: rgba(160,130,80,0.25);
+      z-index: 30; font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow"></div>
+
+  <div class="clock-container" id="clock">
+    <!-- Ornate wooden frame -->
+    <div class="clock-frame"></div>
+
+    <!-- Glass bezel -->
+    <div class="clock-glass"></div>
+
+    <!-- Clock face -->
+    <div class="clock-face" id="face">
+      <!-- Decorative rings -->
+      <div class="outer-ring"></div>
+      <div class="inner-ring"></div>
+
+      <!-- Title -->
+      <div class="family-title">THE STONES</div>
+      <div class="family-subtitle">whereabouts of the family</div>
+
+      <!-- Hands (built by JS) -->
+      <div class="hand hand-daddy" id="hand-daddy">
+        <div class="hand-body">
+          <div class="hand-tip"></div>
+          <div class="hand-diamond"></div>
+          <div class="hand-shaft"></div>
+          <div class="hand-nameplate">DADDY</div>
+          <div class="hand-tail"></div>
+        </div>
+      </div>
+      <div class="hand hand-mommy" id="hand-mommy">
+        <div class="hand-body">
+          <div class="hand-tip"></div>
+          <div class="hand-diamond"></div>
+          <div class="hand-shaft"></div>
+          <div class="hand-nameplate">MOMMY</div>
+          <div class="hand-tail"></div>
+        </div>
+      </div>
+      <div class="hand hand-shepherd" id="hand-shepherd">
+        <div class="hand-body">
+          <div class="hand-tip"></div>
+          <div class="hand-diamond"></div>
+          <div class="hand-shaft"></div>
+          <div class="hand-nameplate">SHEPHERD</div>
+          <div class="hand-tail"></div>
+        </div>
+      </div>
+      <div class="hand hand-elliot" id="hand-elliot">
+        <div class="hand-body">
+          <div class="hand-tip"></div>
+          <div class="hand-diamond"></div>
+          <div class="hand-shaft"></div>
+          <div class="hand-nameplate">ELLIOT</div>
+          <div class="hand-tail"></div>
+        </div>
+      </div>
+      <div class="hand hand-becket" id="hand-becket">
+        <div class="hand-body">
+          <div class="hand-tip"></div>
+          <div class="hand-diamond"></div>
+          <div class="hand-shaft"></div>
+          <div class="hand-nameplate">BECKET</div>
+          <div class="hand-tail"></div>
+        </div>
+      </div>
+
+      <div class="center-hub"></div>
+    </div>
+  </div>
+
+  <div class="status-bar" id="status-bar">the stone family clock</div>
+
+  <script>
+    // ═══════════════════════════════════════════
+    // ZONES
+    // ═══════════════════════════════════════════
+    const ZONES = [
+      { name: 'Home',        icon: '🏡', angle: 0 },
+      { name: 'OLV',         icon: '⛪', angle: 51.4 },
+      { name: 'Pelham High', icon: '🏫', angle: 102.9 },
+      { name: 'Herdmont',    icon: '🏠', angle: 154.3 },
+      { name: 'Practice',    icon: '⚾', angle: 205.7 },
+      { name: 'Out & About', icon: '🛒', angle: 257.1 },
+      { name: 'Traveling',   icon: '🚗', angle: 308.6 },
+    ];
+
+    const FAMILY = [
+      { id: 'daddy',    entity: 'person.daddy' },
+      { id: 'mommy',    entity: 'person.mommy' },
+      { id: 'shepherd', entity: 'person.shepherd' },
+      { id: 'elliot',   entity: 'person.elliot' },
+      { id: 'becket',   entity: 'person.becket' },
+    ];
+
+    // ═══════════════════════════════════════════
+    // RENDER ZONE LABELS AND DECORATIONS
+    // ═══════════════════════════════════════════
+    const face = document.getElementById('face');
+
+    function renderZones() {
+      // Set hand shaft lengths based on clock size
+      const size = face.getBoundingClientRect().width;
+      document.documentElement.style.setProperty('--shaft-1', (size * 0.30) + 'px');
+      document.documentElement.style.setProperty('--shaft-2', (size * 0.27) + 'px');
+      document.documentElement.style.setProperty('--shaft-3', (size * 0.24) + 'px');
+      document.documentElement.style.setProperty('--shaft-4', (size * 0.21) + 'px');
+      document.documentElement.style.setProperty('--shaft-5', (size * 0.18) + 'px');
+
+      ZONES.forEach((zone, i) => {
+        const angleRad = (zone.angle * Math.PI) / 180;
+        const labelR = 0.36;
+        const iconR = 0.28;
+        const divAngle = zone.angle + (360 / ZONES.length / 2);
+
+        // Label
+        const label = document.createElement('div');
+        label.className = 'zone-label';
+        label.textContent = zone.name;
+        const lx = Math.cos(angleRad - Math.PI/2) * labelR * 100;
+        const ly = Math.sin(angleRad - Math.PI/2) * labelR * 100;
+        label.style.transform = `translate(calc(${lx}% - 50%), calc(${ly}% - 50%))`;
+        face.appendChild(label);
+
+        // Icon
+        const icon = document.createElement('div');
+        icon.className = 'zone-icon';
+        icon.textContent = zone.icon;
+        const ix = Math.cos(angleRad - Math.PI/2) * iconR * 100;
+        const iy = Math.sin(angleRad - Math.PI/2) * iconR * 100;
+        icon.style.transform = `translate(calc(${ix}% - 50%), calc(${iy}% - 50%))`;
+        face.appendChild(icon);
+
+        // Ornate divider
+        const div = document.createElement('div');
+        div.className = 'zone-divider';
+        div.style.transform = `rotate(${divAngle}deg) translateY(-100%)`;
+        face.appendChild(div);
+      });
+
+      // Tick marks
+      for (let i = 0; i < 84; i++) {
+        const tick = document.createElement('div');
+        const angle = (i / 84) * 360;
+        const isMajor = i % 12 === 0;
+        tick.className = 'tick ' + (isMajor ? 'tick-major' : 'tick-minor');
+        tick.style.transform = `rotate(${angle}deg) translateY(-${isMajor ? 44 : 45}%)`;
+        face.appendChild(tick);
+      }
+    }
+
+    renderZones();
+    window.addEventListener('resize', () => {
+      const size = face.getBoundingClientRect().width;
+      document.documentElement.style.setProperty('--shaft-1', (size * 0.30) + 'px');
+      document.documentElement.style.setProperty('--shaft-2', (size * 0.27) + 'px');
+      document.documentElement.style.setProperty('--shaft-3', (size * 0.24) + 'px');
+      document.documentElement.style.setProperty('--shaft-4', (size * 0.21) + 'px');
+      document.documentElement.style.setProperty('--shaft-5', (size * 0.18) + 'px');
+    });
+
+    // ═══════════════════════════════════════════
+    // HAND MOVEMENT
+    // ═══════════════════════════════════════════
+    let currentAngles = {};
+    FAMILY.forEach(f => { currentAngles[f.id] = 0; });
+
+    function getZoneAngle(zoneName) {
+      const zone = ZONES.find(z => z.name.toLowerCase() === zoneName.toLowerCase());
+      if (zone) return zone.angle;
+      const map = {
+        'home': 'Home', 'not_home': 'Out & About',
+        'olv': 'OLV', 'our lady of the valley': 'OLV', 'church': 'OLV',
+        'pelham high': 'Pelham High', 'pelham high school': 'Pelham High', 'school': 'Pelham High', 'work': 'Pelham High',
+        'herdmont': 'Herdmont', 'grandma': 'Herdmont',
+        'practice': 'Practice', 'field': 'Practice', 'gym': 'Practice',
+        'traveling': 'Traveling', 'travelling': 'Traveling', 'driving': 'Traveling',
+      };
+      const mapped = map[zoneName.toLowerCase()];
+      if (mapped) { const z = ZONES.find(z => z.name === mapped); if (z) return z.angle; }
+      return ZONES.find(z => z.name === 'Out & About')?.angle || 257;
+    }
+
+    function moveHand(memberId, zoneName) {
+      const hand = document.getElementById('hand-' + memberId);
+      if (!hand) return;
+      const target = getZoneAngle(zoneName);
+      let current = currentAngles[memberId] || 0;
+      let diff = target - (current % 360);
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      const newAngle = current + diff;
+      currentAngles[memberId] = newAngle;
+      hand.style.transform = `translate(-50%, -100%) rotate(${newAngle}deg)`;
+    }
+
+    function setAllHands(states) {
+      Object.entries(states).forEach(([id, zone]) => moveHand(id, zone));
+    }
+
+    // ═══════════════════════════════════════════
+    // HOME ASSISTANT
+    // ═══════════════════════════════════════════
+    const HA_URL = '';
+    const HA_TOKEN = '';
+
+    async function pollHA() {
+      if (!HA_URL || !HA_TOKEN) return;
+      try {
+        const states = {};
+        for (const m of FAMILY) {
+          const res = await fetch(`${HA_URL}/api/states/${m.entity}`, { headers: { 'Authorization': `Bearer ${HA_TOKEN}` } });
+          const data = await res.json();
+          states[m.id] = data.state || 'home';
+        }
+        setAllHands(states);
+        document.getElementById('status-bar').textContent = 'the stone family clock';
+      } catch { }
+    }
+
+    // ═══════════════════════════════════════════
+    // DEMO MODE
+    // ═══════════════════════════════════════════
+    const DEMOS = [
+      { daddy: 'Pelham High', mommy: 'Home',        shepherd: 'OLV',      elliot: 'OLV',         becket: 'OLV' },
+      { daddy: 'Pelham High', mommy: 'Out & About',  shepherd: 'OLV',     elliot: 'OLV',         becket: 'OLV' },
+      { daddy: 'Traveling',   mommy: 'Home',         shepherd: 'Practice', elliot: 'Home',        becket: 'Home' },
+      { daddy: 'Home',        mommy: 'Home',         shepherd: 'Home',    elliot: 'Home',        becket: 'Home' },
+      { daddy: 'Herdmont',    mommy: 'Herdmont',     shepherd: 'Herdmont', elliot: 'Herdmont',   becket: 'Herdmont' },
+      { daddy: 'Home',        mommy: 'OLV',          shepherd: 'Practice', elliot: 'Out & About', becket: 'Home' },
+      { daddy: 'Pelham High', mommy: 'Traveling',    shepherd: 'OLV',     elliot: 'OLV',         becket: 'OLV' },
+      { daddy: 'Home',        mommy: 'Home',         shepherd: 'Home',    elliot: 'Practice',    becket: 'Practice' },
+      { daddy: 'Traveling',   mommy: 'Traveling',    shepherd: 'Traveling', elliot: 'Traveling',  becket: 'Traveling' },
+      { daddy: 'Home',        mommy: 'OLV',          shepherd: 'Home',    elliot: 'Home',        becket: 'Herdmont' },
+    ];
+
+    let demoIdx = 0;
+    function runDemo() {
+      setAllHands(DEMOS[demoIdx % DEMOS.length]);
+      demoIdx++;
+    }
+
+    // ═══════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════
+    document.fonts.ready.then(() => {
+      setAllHands({ daddy: 'Home', mommy: 'Home', shepherd: 'Home', elliot: 'Home', becket: 'Home' });
+
+      if (HA_URL && HA_TOKEN) {
+        pollHA();
+        setInterval(pollHA, 10000);
+      } else {
+        setTimeout(() => { runDemo(); setInterval(runDemo, 7000); }, 2500);
+      }
+    });
+  </script>
+
+</body>
+</html>
