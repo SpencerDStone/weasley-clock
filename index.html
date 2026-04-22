@@ -513,14 +513,22 @@
     // HOME ASSISTANT
     // ═══════════════════════════════════════════
     // Read HA credentials from URL query params so we don't commit them to git.
-    // Usage: https://spencerdstone.github.io/weasley-clock/?ha=http://192.168.10.10:8123&token=eyJ...
-    // Tokens can also come from localStorage (stored on first use) or postMessage from parent frame.
+    // Usage:
+    //   Hosted inside HA (at /local/):  /local/weasley-clock/index.html?token=eyJ...
+    //     HA_URL is auto-detected as same-origin (no CORS issues)
+    //   Hosted externally (GitHub Pages): ?ha=http://100.x.x.x:8123&token=eyJ...
     const urlParams = new URLSearchParams(window.location.search);
-    let HA_URL = urlParams.get('ha') || localStorage.getItem('weasley_ha_url') || '';
+
+    // Auto-detect: if we're served from an HA URL (port 8123), use same-origin for API calls
+    const isHostedInHA = window.location.port === '8123' || window.location.pathname.startsWith('/local/');
+
+    let HA_URL = urlParams.get('ha')
+                 || localStorage.getItem('weasley_ha_url')
+                 || (isHostedInHA ? window.location.origin : '');
     let HA_TOKEN = urlParams.get('token') || localStorage.getItem('weasley_ha_token') || '';
 
     // Persist to localStorage so the tablet just works after first load
-    if (urlParams.get('ha')) localStorage.setItem('weasley_ha_url', HA_URL);
+    if (urlParams.get('ha')) localStorage.setItem('weasley_ha_url', urlParams.get('ha'));
     if (urlParams.get('token')) localStorage.setItem('weasley_ha_token', HA_TOKEN);
 
     // Allow parent frame (HA dashboard) to inject credentials via postMessage
@@ -534,8 +542,9 @@
     async function pollHA() {
       if (!HA_URL || !HA_TOKEN) return;
       try {
-        // Fetch all states once, then match
-        const res = await fetch(`${HA_URL}/api/states`, { headers: { 'Authorization': `Bearer ${HA_TOKEN}` } });
+        // If same-origin with HA, use relative URL to avoid CORS
+        const apiBase = (HA_URL === window.location.origin) ? '' : HA_URL;
+        const res = await fetch(`${apiBase}/api/states`, { headers: { 'Authorization': `Bearer ${HA_TOKEN}` } });
         if (!res.ok) return;
         const all = await res.json();
         const persons = all.filter(s => s.entity_id.startsWith('person.'));
