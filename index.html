@@ -339,38 +339,196 @@
       50% { opacity: 0.5; transform: translate(2%, -1%); }
       75% { opacity: 0.9; transform: translate(-1%, 2%); }
     }
+
+    /* ═══ PAPER TEXTURE OVERLAY ═══ */
+    .paper-texture {
+      position: absolute; inset: 0; border-radius: 50%;
+      pointer-events: none; mix-blend-mode: multiply;
+      opacity: 0.5; z-index: 4;
+    }
+
+    /* ═══ WOOD GRAIN FRAME ═══ */
+    .wood-grain {
+      position: absolute; inset: -30px; border-radius: 50%;
+      pointer-events: none; z-index: 2;
+      mix-blend-mode: overlay; opacity: 0.35;
+    }
+
+    /* ═══ BRASS GLINT ANIMATION on medallions ═══ */
+    .medallion {
+      overflow: hidden;
+    }
+    .medallion::before {
+      content: ''; position: absolute; inset: 0; border-radius: 50%;
+      background: linear-gradient(135deg, transparent 40%, rgba(255,240,180,0.5) 48%, transparent 58%);
+      animation: brassGlint 8s ease-in-out infinite;
+      transform: translateX(-100%);
+    }
+    @keyframes brassGlint {
+      0%, 85%, 100% { transform: translateX(-100%); opacity: 0; }
+      90% { transform: translateX(0%); opacity: 1; }
+      95% { transform: translateX(100%); opacity: 0; }
+    }
+
+    /* ═══ ORNATE SVG ZONE ICONS ═══ */
+    .zone-svg-icon {
+      position: absolute; top: 50%; left: 50%;
+      width: 28px; height: 28px;
+      pointer-events: none;
+      opacity: 0.45;
+      filter: sepia(60%) saturate(80%) brightness(0.85);
+    }
+
+    /* ═══ HAND SVG — ornate brass ═══ */
+    .hand-svg {
+      position: absolute; top: 50%; left: 50%;
+      transform-origin: 50% 85%;
+      transition: transform 2.2s cubic-bezier(0.25, 1.5, 0.5, 1);
+      z-index: 10;
+      filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.45));
+    }
   </style>
 </head>
 <body>
 
   <div class="glow"></div>
 
+  <!-- ═══ SVG FILTERS — paper texture, wood grain, etc. ═══ -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <!-- Paper/parchment texture: fine grain with bigger stains -->
+      <filter id="paper-texture">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3"/>
+        <feColorMatrix values="0 0 0 0 0.35
+                                0 0 0 0 0.20
+                                0 0 0 0 0.08
+                                0 0 0 0.6 0"/>
+      </filter>
+      <!-- Larger stains/foxing spots -->
+      <filter id="paper-stains">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="11"/>
+        <feColorMatrix values="0 0 0 0 0.30
+                                0 0 0 0 0.18
+                                0 0 0 0 0.06
+                                0 0 0 0.5 0"/>
+        <feComposite in2="SourceGraphic" operator="in"/>
+      </filter>
+      <!-- Wood grain — long streaky noise -->
+      <filter id="wood-grain">
+        <feTurbulence type="turbulence" baseFrequency="0.02 0.6" numOctaves="5" seed="7"/>
+        <feColorMatrix values="0 0 0 0 0.15
+                                0 0 0 0 0.08
+                                0 0 0 0 0.03
+                                0 0 0 0.8 0"/>
+      </filter>
+      <!-- Subtle glow around brass -->
+      <filter id="brass-glow">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
+        <feColorMatrix values="1 0 0 0 0.2
+                                0 1 0 0 0.15
+                                0 0 1 0 0
+                                0 0 0 1 0"/>
+      </filter>
+
+      <!-- ═══ ZONE ICON SYMBOLS — ornate, aged brass ═══ -->
+      <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="M12 3 L22 12 L19 12 L19 20 L14 20 L14 14 L10 14 L10 20 L5 20 L5 12 L2 12 Z" fill="#6b4e20" stroke="#3a2810" stroke-width="0.5"/>
+        <path d="M8 10 L16 10 L16 14 L8 14 Z" fill="#5a3e18"/>
+      </symbol>
+      <symbol id="icon-church" viewBox="0 0 24 24">
+        <path d="M11 2 L13 2 L13 5 L15 5 L15 7 L13 7 L13 9 L18 9 L18 21 L15 21 L15 16 L13 16 L13 21 L11 21 L11 16 L9 16 L9 21 L6 21 L6 9 L11 9 L11 7 L9 7 L9 5 L11 5 Z" fill="#6b4e20" stroke="#3a2810" stroke-width="0.5"/>
+      </symbol>
+      <symbol id="icon-school" viewBox="0 0 24 24">
+        <path d="M12 3 L22 8 L12 13 L2 8 Z" fill="#6b4e20" stroke="#3a2810" stroke-width="0.5"/>
+        <path d="M6 11 L6 16 C6 17 8 18 12 18 C16 18 18 17 18 16 L18 11" fill="none" stroke="#6b4e20" stroke-width="1.8"/>
+        <line x1="21" y1="8" x2="21" y2="14" stroke="#6b4e20" stroke-width="1"/>
+      </symbol>
+      <symbol id="icon-herdmont" viewBox="0 0 24 24">
+        <path d="M12 4 L20 10 L20 20 L4 20 L4 10 Z" fill="#6b4e20" stroke="#3a2810" stroke-width="0.5"/>
+        <path d="M10 20 L10 14 L14 14 L14 20" fill="#3a2810"/>
+        <path d="M12 4 L20 10 L4 10 Z" fill="#5a3e18"/>
+      </symbol>
+      <symbol id="icon-daycare" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="5" fill="#6b4e20"/>
+        <g fill="#6b4e20">
+          <path d="M12 1 L12 4 M12 20 L12 23 M1 12 L4 12 M20 12 L23 12 M4.2 4.2 L6.3 6.3 M17.7 17.7 L19.8 19.8 M4.2 19.8 L6.3 17.7 M17.7 6.3 L19.8 4.2"/>
+        </g>
+        <g stroke="#6b4e20" stroke-width="2" fill="none">
+          <line x1="12" y1="1" x2="12" y2="4"/>
+          <line x1="12" y1="20" x2="12" y2="23"/>
+          <line x1="1" y1="12" x2="4" y2="12"/>
+          <line x1="20" y1="12" x2="23" y2="12"/>
+          <line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/>
+          <line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/>
+          <line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/>
+          <line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/>
+        </g>
+      </symbol>
+      <symbol id="icon-practice" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" fill="#c4a070" stroke="#3a2810" stroke-width="0.8"/>
+        <path d="M5 8 C8 7 16 7 19 8 M5 16 C8 17 16 17 19 16" stroke="#8b2500" stroke-width="0.9" fill="none"/>
+      </symbol>
+      <symbol id="icon-out" viewBox="0 0 24 24">
+        <path d="M6 8 L20 8 L18 18 L8 18 Z M6 8 L4 4 L2 4" fill="none" stroke="#6b4e20" stroke-width="1.5"/>
+        <circle cx="10" cy="21" r="1.5" fill="#6b4e20"/>
+        <circle cx="17" cy="21" r="1.5" fill="#6b4e20"/>
+      </symbol>
+      <symbol id="icon-traveling" viewBox="0 0 24 24">
+        <path d="M3 17 L5 14 L9 12 L18 12 L20 14 L21 17 L20 19 L18 19 L17 17 L15 17 L14 19 L10 19 L9 17 L6 17 L5 19 L3 19 Z" fill="#6b4e20" stroke="#3a2810" stroke-width="0.5"/>
+        <circle cx="7" cy="19" r="1.5" fill="#3a2810"/>
+        <circle cx="17" cy="19" r="1.5" fill="#3a2810"/>
+      </symbol>
+
+      <!-- ═══ ORNATE HAND SHAPES — reusable SVG paths ═══ -->
+      <symbol id="hand-shape" viewBox="0 0 40 300">
+        <!-- Spear tip with fleur-de-lis -->
+        <path d="M20 0 L14 18 L18 18 L16 24 L20 22 L24 24 L22 18 L26 18 Z" class="hand-tip-fill"/>
+        <!-- Diamond ornament -->
+        <path d="M20 28 L28 38 L20 48 L12 38 Z" class="hand-ornament-fill" stroke-width="0.5"/>
+        <!-- Circle with inner detail -->
+        <circle cx="20" cy="60" r="7" class="hand-ornament-fill"/>
+        <circle cx="20" cy="60" r="4" fill="rgba(0,0,0,0.25)"/>
+        <!-- Main shaft -->
+        <rect x="17" y="67" width="6" height="150" class="hand-shaft-fill"/>
+        <!-- Decorative shaft ring -->
+        <rect x="14" y="120" width="12" height="4" class="hand-ornament-fill"/>
+        <rect x="14" y="170" width="12" height="4" class="hand-ornament-fill"/>
+        <!-- Nameplate mount -->
+        <rect x="12" y="80" width="16" height="22" rx="3" class="hand-plate-fill"/>
+        <!-- Counterweight tail -->
+        <rect x="18" y="217" width="4" height="25" class="hand-shaft-fill"/>
+        <circle cx="20" cy="248" r="8" class="hand-ornament-fill"/>
+        <circle cx="20" cy="248" r="4" fill="rgba(0,0,0,0.25)"/>
+      </symbol>
+    </defs>
+  </svg>
+
   <div class="clock-container" id="clock">
     <!-- Ornate wooden frame -->
     <div class="clock-frame"></div>
+    <!-- Wood grain overlay -->
+    <svg class="wood-grain" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" filter="url(#wood-grain)"/></svg>
 
     <!-- Glass bezel -->
     <div class="clock-glass"></div>
 
     <!-- Clock face -->
     <div class="clock-face" id="face">
+      <!-- Paper texture overlay (fine fiber grain) -->
+      <svg class="paper-texture" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" filter="url(#paper-texture)"/></svg>
+
       <!-- Decorative rings -->
       <div class="outer-ring"></div>
       <div class="inner-ring"></div>
 
-      <!-- Title — curved along the top arc -->
+      <!-- Title — curved along the top arc, shorter span so it doesn't overlap zone labels -->
       <svg class="family-title-arc" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         <defs>
-          <!-- Upper arc for title (sits above the clock center) -->
-          <path id="titleArc" d="M 10,50 A 40,40 0 0 1 90,50" fill="none"/>
-          <!-- Lower arc for subtitle -->
-          <path id="subtitleArc" d="M 14,50 A 36,36 0 0 0 86,50" fill="none"/>
+          <!-- Shorter arc, closer to center, for crisp title placement -->
+          <path id="titleArc" d="M 22,46 A 34,34 0 0 1 78,46" fill="none"/>
         </defs>
-        <text style="font-family: 'Uncial Antiqua', serif; font-size: 6.5px; fill: #4a3318; letter-spacing: 2.5px;">
+        <text style="font-family: 'Uncial Antiqua', serif; font-size: 4.8px; fill: #4a3318; letter-spacing: 2.2px;">
           <textPath href="#titleArc" startOffset="50%" text-anchor="middle">✦ THE STONES ✦</textPath>
-        </text>
-        <text style="font-family: 'Crimson Text', serif; font-size: 3.2px; fill: #7a5a30; letter-spacing: 1.8px; font-style: italic;">
-          <textPath href="#subtitleArc" startOffset="50%" text-anchor="middle">whereabouts of the family</textPath>
         </text>
       </svg>
 
@@ -432,13 +590,13 @@
     // ZONES
     // ═══════════════════════════════════════════
     const ZONES = [
-      { name: 'Home',        icon: '🏡', angle: 0 },
-      { name: 'OLV',         icon: '⛪', angle: 51.4 },
-      { name: 'Pelham High', icon: '🏫', angle: 102.9 },
-      { name: 'Herdmont',    icon: '🏠', angle: 154.3 },
-      { name: 'Practice',    icon: '⚾', angle: 205.7 },
-      { name: 'Out & About', icon: '🛒', angle: 257.1 },
-      { name: 'Traveling',   icon: '🚗', angle: 308.6 },
+      { name: 'Home',        icon: 'home',       angle: 0 },
+      { name: 'OLV',         icon: 'church',     angle: 51.4 },
+      { name: 'Pelham High', icon: 'school',     angle: 102.9 },
+      { name: 'Herdmont',    icon: 'herdmont',   angle: 154.3 },
+      { name: 'Practice',    icon: 'practice',   angle: 205.7 },
+      { name: 'Out & About', icon: 'out',        angle: 257.1 },
+      { name: 'Traveling',   icon: 'traveling',  angle: 308.6 },
     ];
 
     const FAMILY = [
@@ -480,14 +638,17 @@
         label.style.transform = `translate(${lx}px, ${ly}px)`;
         face.appendChild(label);
 
-        // Icon
-        const icon = document.createElement('div');
-        icon.className = 'zone-icon';
-        icon.textContent = zone.icon;
+        // Icon — SVG symbol reference
+        const iconWrap = document.createElementNS('http://www.w3.org/2000/svg','svg');
+        iconWrap.setAttribute('class', 'zone-svg-icon');
+        iconWrap.setAttribute('viewBox', '0 0 24 24');
+        const use = document.createElementNS('http://www.w3.org/2000/svg','use');
+        use.setAttribute('href', '#icon-' + zone.icon);
+        iconWrap.appendChild(use);
         const ix = Math.cos(angleRad - Math.PI/2) * ir;
         const iy = Math.sin(angleRad - Math.PI/2) * ir;
-        icon.style.transform = `translate(${ix}px, ${iy}px)`;
-        face.appendChild(icon);
+        iconWrap.style.transform = `translate(calc(${ix}px - 50%), calc(${iy}px - 50%))`;
+        face.appendChild(iconWrap);
 
         // Ornate divider
         const div = document.createElement('div');
