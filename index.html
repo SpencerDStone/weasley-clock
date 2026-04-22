@@ -151,17 +151,18 @@
       font-size: clamp(9px, 2vmin, 15px);
       color: #3e2a15;
       text-shadow: 0 1px 0 rgba(255,235,190,0.25);
-      transform-origin: 0 0;
       pointer-events: none;
       text-align: center;
-      width: 90px; margin-left: -45px;
-      line-height: 1.2;
+      width: 110px;
+      margin-left: -55px;
+      margin-top: -9px;
+      line-height: 1.15;
     }
 
     .zone-icon {
       position: absolute; top: 50%; left: 50%;
       font-size: clamp(16px, 3.5vmin, 28px);
-      transform-origin: 0 0;
+      margin-left: -14px; margin-top: -14px;
       pointer-events: none;
       opacity: 0.35;
       filter: grayscale(40%) sepia(30%);
@@ -415,28 +416,30 @@
       document.documentElement.style.setProperty('--shaft-4', (size * 0.21) + 'px');
       document.documentElement.style.setProperty('--shaft-5', (size * 0.18) + 'px');
 
+      // Use pixel offsets based on face size, not percentages (percentages reference own width, not parent)
+      const r = size * 0.36;   // label radius in pixels
+      const ir = size * 0.28;  // icon radius in pixels
+
       ZONES.forEach((zone, i) => {
         const angleRad = (zone.angle * Math.PI) / 180;
-        const labelR = 0.36;
-        const iconR = 0.28;
         const divAngle = zone.angle + (360 / ZONES.length / 2);
 
-        // Label
+        // Label — absolutely positioned at center, push outward in pixels
         const label = document.createElement('div');
         label.className = 'zone-label';
         label.textContent = zone.name;
-        const lx = Math.cos(angleRad - Math.PI/2) * labelR * 100;
-        const ly = Math.sin(angleRad - Math.PI/2) * labelR * 100;
-        label.style.transform = `translate(calc(${lx}% - 50%), calc(${ly}% - 50%))`;
+        const lx = Math.cos(angleRad - Math.PI/2) * r;
+        const ly = Math.sin(angleRad - Math.PI/2) * r;
+        label.style.transform = `translate(${lx}px, ${ly}px)`;
         face.appendChild(label);
 
         // Icon
         const icon = document.createElement('div');
         icon.className = 'zone-icon';
         icon.textContent = zone.icon;
-        const ix = Math.cos(angleRad - Math.PI/2) * iconR * 100;
-        const iy = Math.sin(angleRad - Math.PI/2) * iconR * 100;
-        icon.style.transform = `translate(calc(${ix}% - 50%), calc(${iy}% - 50%))`;
+        const ix = Math.cos(angleRad - Math.PI/2) * ir;
+        const iy = Math.sin(angleRad - Math.PI/2) * ir;
+        icon.style.transform = `translate(${ix}px, ${iy}px)`;
         face.appendChild(icon);
 
         // Ornate divider
@@ -531,15 +534,35 @@
     async function pollHA() {
       if (!HA_URL || !HA_TOKEN) return;
       try {
+        // Fetch all states once, then match
+        const res = await fetch(`${HA_URL}/api/states`, { headers: { 'Authorization': `Bearer ${HA_TOKEN}` } });
+        if (!res.ok) return;
+        const all = await res.json();
+        const persons = all.filter(s => s.entity_id.startsWith('person.'));
+
         const states = {};
+        let matched = 0;
         for (const m of FAMILY) {
-          const res = await fetch(`${HA_URL}/api/states/${m.entity}`, { headers: { 'Authorization': `Bearer ${HA_TOKEN}` } });
-          const data = await res.json();
-          states[m.id] = data.state || 'home';
+          // 1. Exact match (person.daddy)
+          let p = persons.find(x => x.entity_id === m.entity);
+          // 2. Friendly name match ("Daddy" or "daddy")
+          if (!p) p = persons.find(x => (x.attributes.friendly_name || '').toLowerCase() === m.id);
+          // 3. Entity contains id (person.thecoachstone has no 'daddy' but person.daddy would work)
+          if (!p) p = persons.find(x => x.entity_id.toLowerCase().includes(m.id));
+          // 4. Fallback: if this is 'daddy' and only one Person exists, use it
+          if (!p && m.id === 'daddy' && persons.length === 1) p = persons[0];
+
+          if (p) {
+            states[m.id] = p.state || 'home';
+            matched++;
+          }
         }
-        setAllHands(states);
-        document.getElementById('status-bar').textContent = 'the stone family clock';
-      } catch { }
+        if (matched > 0) {
+          setAllHands(states);
+          document.getElementById('status-bar').textContent =
+            `the stone family clock — live · ${matched}/${FAMILY.length} tracked`;
+        }
+      } catch (e) { console.warn('poll error:', e); }
     }
 
     // ═══════════════════════════════════════════
