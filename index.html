@@ -387,6 +387,57 @@
       z-index: 10;
       filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.45));
     }
+
+    /* ═══ CUSTOM PAINTED ASSETS (Phase 2 — graceful fallback if missing) ═══ */
+    /* Parchment background — set via JS when image loads */
+    .clock-face.has-parchment {
+      background-image: var(--parchment-url) !important;
+      background-size: cover;
+      background-position: center;
+    }
+    /* Painted scene above clock */
+    .scene-overlay {
+      position: absolute;
+      top: -3%; left: 50%;
+      transform: translateX(-50%);
+      width: 80%; height: 25%;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center top;
+      pointer-events: none;
+      z-index: 7;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+    .scene-overlay.loaded { opacity: 1; }
+    /* Painted family crest */
+    .crest-overlay {
+      position: absolute;
+      bottom: 8%; left: 50%;
+      transform: translateX(-50%);
+      width: 30%; height: 18%;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      pointer-events: none;
+      z-index: 7;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+    .crest-overlay.loaded { opacity: 1; }
+    /* Hand cameo (face portrait at the tip of each hand) */
+    .hand-cameo {
+      position: absolute;
+      top: -22px; left: 50%;
+      transform: translateX(-50%);
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 0 0 2px rgba(160,120,60,0.7), 0 2px 4px rgba(0,0,0,0.4);
+      display: none;
+    }
+    .hand.has-cameo .hand-cameo { display: block; }
   </style>
 </head>
 <body>
@@ -521,6 +572,9 @@
       <div class="outer-ring"></div>
       <div class="inner-ring"></div>
 
+      <!-- Painted scene above clock (loads if /clock-assets/scene.png exists) -->
+      <div class="scene-overlay" id="scene-overlay"></div>
+
       <!-- Title — curved along the top arc, shorter span so it doesn't overlap zone labels -->
       <svg class="family-title-arc" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         <defs>
@@ -531,6 +585,9 @@
           <textPath href="#titleArc" startOffset="50%" text-anchor="middle">✦ THE STONES ✦</textPath>
         </text>
       </svg>
+
+      <!-- Painted family crest at bottom (loads if /clock-assets/crest.png exists) -->
+      <div class="crest-overlay" id="crest-overlay"></div>
 
       <!-- Hands (built by JS) -->
       <div class="hand hand-daddy" id="hand-daddy">
@@ -763,6 +820,57 @@
     if (urlParams.get('screensaver') === '1' || urlParams.get('screensaver') === 'true') {
       document.body.classList.add('screensaver');
     }
+
+    // ═══════════════════════════════════════════
+    // CUSTOM PAINTED ASSETS — load if present, fallback if not
+    // ═══════════════════════════════════════════
+    const ASSET_BASE = urlParams.get('assets') || './clock-assets';
+
+    function loadOptional(url, onLoad, onFail) {
+      const img = new Image();
+      img.onload = () => onLoad(url);
+      img.onerror = () => onFail && onFail();
+      img.src = url + '?v=' + Date.now();
+    }
+
+    // Parchment background
+    loadOptional(`${ASSET_BASE}/parchment.png`, (url) => {
+      document.documentElement.style.setProperty('--parchment-url', `url('${url}')`);
+      document.querySelector('.clock-face').classList.add('has-parchment');
+    });
+
+    // Scene above clock
+    loadOptional(`${ASSET_BASE}/scene.png`, (url) => {
+      const el = document.getElementById('scene-overlay');
+      el.style.backgroundImage = `url('${url}')`;
+      el.classList.add('loaded');
+    });
+
+    // Family crest
+    loadOptional(`${ASSET_BASE}/crest.png`, (url) => {
+      const el = document.getElementById('crest-overlay');
+      el.style.backgroundImage = `url('${url}')`;
+      el.classList.add('loaded');
+    });
+
+    // Hand cameos (one per family member, name-keyed)
+    function loadHandCameos() {
+      ['daddy', 'mommy', 'shepherd', 'elliot', 'becket'].forEach(name => {
+        loadOptional(`${ASSET_BASE}/hands/${name}.png`, (url) => {
+          const hand = document.getElementById('hand-' + name);
+          if (!hand) return;
+          let cameo = hand.querySelector('.hand-cameo');
+          if (!cameo) {
+            cameo = document.createElement('div');
+            cameo.className = 'hand-cameo';
+            hand.querySelector('.hand-body').insertBefore(cameo, hand.querySelector('.hand-body').firstChild);
+          }
+          cameo.style.backgroundImage = `url('${url}')`;
+          hand.classList.add('has-cameo');
+        });
+      });
+    }
+    loadHandCameos();
 
     // Auto-detect: if we're served from an HA URL (port 8123), use same-origin for API calls.
     // This OVERRIDES localStorage so stale cached URLs can't cause CORS issues.
